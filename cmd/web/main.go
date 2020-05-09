@@ -3,6 +3,7 @@ package main
 import (
 	"io/ioutil"
 	"net/http"
+	"path/filepath"
 
 	"github.com/gin-gonic/gin"
 	"github.com/manzanit0/bob/pkg/app"
@@ -66,5 +67,11 @@ func buildHandler(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "pong"})
+	// To download the file as a binary
+	filePath := filepath.Join(outDir, a.Name)
+	c.Header("Content-Description", "File Transfer")
+	c.Header("Content-Transfer-Encoding", "binary")
+	c.Header("Content-Disposition", "attachment; filename="+a.Name)
+	c.Header("Content-Type", "application/octet-stream")
+	c.File(filePath)
 }
