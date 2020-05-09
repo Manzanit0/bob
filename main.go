@@ -1,15 +1,20 @@
 package main
 
 import (
-	"errors"
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"path"
+	"path/filepath"
+
+	"log"
+
+	"github.com/manzanit0/bob/pkg/app"
+	"github.com/pkg/errors"
 )
 
 type config struct {
 	repositoryURL   string
-	repositoryName  string
 	repositoryEntry string
 	outputDir       string
 }
@@ -21,9 +26,29 @@ func main() {
 		return
 	}
 
-	err = doMagic(conf)
+	_, repoName := path.Split(conf.repositoryURL)
+
+	tempDir, err := getTempDir(repoName)
 	if err != nil {
-		fmt.Print(err.Error())
+		log.Fatal(err)
+	}
+
+	a := app.New(conf.repositoryURL, conf.repositoryEntry, tempDir)
+
+	err = a.Clone()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = a.Build(conf.outputDir)
+	if err != nil {
+		// Don't Fatal - we want to clean up the clone.
+		log.Print(err)
+	}
+
+	err = a.DeleteClone()
+	if err != nil {
+		log.Fatal(err)
 	}
 
 	fmt.Println("\nBob, The Builder has finished!")
@@ -43,10 +68,7 @@ func processArgs() (config, error) {
 		return config{}, errors.New("error parsing entry point")
 	}
 
-	_, s := path.Split(*repositoryURL)
-
 	c := config{
-		repositoryName:  s,
 		repositoryURL:   *repositoryURL,
 		repositoryEntry: *entryPoint,
 		outputDir:       *outputDir, // TODO check it's a valid path
@@ -55,27 +77,11 @@ func processArgs() (config, error) {
 	return c, nil
 }
 
-func doMagic(conf config) error {
-	repositoryDir, err := getClonePath(conf.repositoryName)
+func getTempDir(repositoryName string) (string, error) {
+	dir, err := ioutil.TempDir("", "example")
 	if err != nil {
-		return err
+		return "", errors.Wrap(err, "unable to create temporal directory")
 	}
 
-	err = cloneRepository(conf.repositoryURL, repositoryDir)
-	if err != nil {
-		return err
-	}
-
-	err = build(conf.repositoryName, conf.repositoryEntry, repositoryDir, conf.outputDir)
-	if err != nil {
-		// Don't return - we want to clean up, deleting the repo.
-		fmt.Print(err.Error())
-	}
-
-	err = deleteRepository(repositoryDir)
-	if err != nil {
-		return err
-	}
-
-	return err
+	return filepath.Join(dir, repositoryName), nil
 }
