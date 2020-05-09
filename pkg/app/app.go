@@ -17,8 +17,12 @@ type App struct {
 }
 
 func New(remoteURL, entry, tempDir string) App {
-	_, s := path.Split(remoteURL)
-	return App{Name: s, RemoteURL: remoteURL, Entry: entry, TempDir: tempDir}
+	_, repoName := path.Split(remoteURL)
+
+	// Needs to be inexistent dir to be able to clone
+	tmp := filepath.Join(tempDir, repoName)
+
+	return App{Name: repoName, RemoteURL: remoteURL, Entry: entry, TempDir: tmp}
 }
 
 func (a *App) Clone() error {
@@ -57,7 +61,7 @@ func buildRepository(path string, entryPoint string) error {
 
 	err := cmd.Run()
 	if err != nil {
-		return errors.Wrap(err, "unable to clone repository")
+		return errors.Wrap(err, "unable to build repository")
 	}
 
 	return nil

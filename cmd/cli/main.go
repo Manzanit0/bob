@@ -4,8 +4,6 @@ import (
 	"flag"
 	"fmt"
 	"io/ioutil"
-	"path"
-	"path/filepath"
 
 	"log"
 
@@ -26,9 +24,7 @@ func main() {
 		return
 	}
 
-	_, repoName := path.Split(conf.repositoryURL)
-
-	tempDir, err := getTempDir(repoName)
+	tempDir, err := ioutil.TempDir("", "*")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -75,13 +71,4 @@ func processArgs() (config, error) {
 	}
 
 	return c, nil
-}
-
-func getTempDir(repositoryName string) (string, error) {
-	dir, err := ioutil.TempDir("", "example")
-	if err != nil {
-		return "", errors.Wrap(err, "unable to create temporal directory")
-	}
-
-	return filepath.Join(dir, repositoryName), nil
 }
