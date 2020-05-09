@@ -1,21 +1,17 @@
 package main
 
 import (
+	"errors"
 	"flag"
 	"fmt"
-	"os"
-	"os/exec"
 	"path"
-	"path/filepath"
-
-	"github.com/pkg/errors"
 )
 
 type config struct {
-	repositoryURL        string
-	repositoryName       string
-	repositoryEntryPoint string
-	outputDirectory      string
+	repositoryURL   string
+	repositoryName  string
+	repositoryEntry string
+	outputDir       string
 }
 
 func main() {
@@ -25,30 +21,7 @@ func main() {
 		return
 	}
 
-	destPath, err := getClonePath(conf.repositoryName)
-	if err != nil {
-		fmt.Print(err.Error())
-		return
-	}
-
-	err = cloneRepository(conf.repositoryURL, destPath)
-	if err != nil {
-		fmt.Print(err.Error())
-		return
-	}
-
-	err = buildRepository(destPath, conf.repositoryEntryPoint)
-	if err != nil {
-		fmt.Print(err.Error())
-	} else {
-		binaryPath := filepath.Join(destPath, conf.repositoryName)
-		err = moveArtifact(binaryPath, conf.outputDirectory)
-		if err != nil {
-			fmt.Print(err.Error())
-		}
-	}
-
-	err = deleteRepository(destPath)
+	err = doMagic(conf)
 	if err != nil {
 		fmt.Print(err.Error())
 	}
@@ -73,56 +46,36 @@ func processArgs() (config, error) {
 	_, s := path.Split(*repositoryURL)
 
 	c := config{
-		repositoryName:       s,
-		repositoryURL:        *repositoryURL,
-		repositoryEntryPoint: *entryPoint,
-		outputDirectory:      *outputDir, // TODO check it's a valid path
+		repositoryName:  s,
+		repositoryURL:   *repositoryURL,
+		repositoryEntry: *entryPoint,
+		outputDir:       *outputDir, // TODO check it's a valid path
 	}
 
 	return c, nil
 }
 
-func getClonePath(repositoryName string) (string, error) {
-	h, err := os.UserHomeDir()
+func doMagic(conf config) error {
+	repositoryDir, err := getClonePath(conf.repositoryName)
 	if err != nil {
+		return err
+	}
+
+	err = cloneRepository(conf.repositoryURL, repositoryDir)
+	if err != nil {
+		return err
+	}
+
+	err = build(conf.repositoryName, conf.repositoryEntry, repositoryDir, conf.outputDir)
+	if err != nil {
+		// Don't return - we want to clean up, deleting the repo.
 		fmt.Print(err.Error())
-		return "", errors.Wrapf(err, "could not get user home dir")
 	}
 
-	// TODO do this in a temp dir
-	return filepath.Join(h, "bob-workingdir", repositoryName), nil
-}
-
-func cloneRepository(url, destPath string) error {
-	cmd := exec.Command("git", "clone", url, destPath)
-	err := cmd.Run()
-
-	return errors.Wrap(err, "unable to clone repository")
-}
-
-func deleteRepository(destPath string) error {
-	cmd := exec.Command("rm", "-rf", destPath)
-	err := cmd.Run()
-
-	return errors.Wrap(err, "unable to delete repository")
-}
-
-func buildRepository(path string, entryPoint string) error {
-	cmd := exec.Command("go", "build", entryPoint)
-	cmd.Dir = path
-
-	err := cmd.Run()
+	err = deleteRepository(repositoryDir)
 	if err != nil {
-		return errors.Wrap(err, "unable to clone repository")
+		return err
 	}
 
-	return nil
-}
-
-func moveArtifact(binaryPath, outPath string) error {
-	_, binaryName := filepath.Split(binaryPath)
-
-	binaryOutPath := filepath.Join(outPath, binaryName)
-
-	return os.Rename(binaryPath, binaryOutPath)
+	return err
 }
