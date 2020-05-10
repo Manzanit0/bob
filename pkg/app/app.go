@@ -1,6 +1,9 @@
 package app
 
 import (
+	"bytes"
+	"fmt"
+	"log"
 	"os"
 	"os/exec"
 	"path"
@@ -59,8 +62,15 @@ func buildRepository(path, entryPoint, outName string) error {
 	cmd := exec.Command("go", "build", "-o", outName, entryPoint)
 	cmd.Dir = path
 
+	var out bytes.Buffer
+	cmd.Stdout = &out
+
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+
 	err := cmd.Run()
 	if err != nil {
+		log.Print(fmt.Sprint(err) + ": " + stderr.String())
 		return errors.Wrap(err, "unable to build repository")
 	}
 
