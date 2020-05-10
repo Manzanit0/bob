@@ -38,7 +38,7 @@
         const entryPoint = document.getElementById("entryPointField").value;
 
         var xhr = new XMLHttpRequest();
-        xhr.open("POST", "http://localhost:8080/build", true);
+        xhr.open("POST", "https://builder-bob.herokuapp.com/build", true); // TODO make this env dependant
         xhr.setRequestHeader("Content-Type", "application/json");
         xhr.responseType = "arraybuffer";
 

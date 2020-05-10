@@ -83,8 +83,12 @@ func getAllDependencies(path string) error {
 }
 
 func buildRepository(path, entryPoint, outName string) error {
-	cmd := exec.Command("go", "build", "-o", outName, entryPoint)
+	cmd := exec.Command("go", "build", "-i", "-o", outName, entryPoint)
 	cmd.Dir = path
+
+	// FIXME - for now, so it works for me. Ideally, expose as dropdown/parameter
+	cmd.Env = append(os.Environ(), "GOOS=darwin")
+	cmd.Env = append(cmd.Env, "GOARCH=amd64")
 
 	err := run(cmd)
 	if err != nil {
@@ -105,9 +109,6 @@ func moveFile(filePath, outPath string) error {
 // run simply runs the command and in case of error, composes the error message
 // with the combination of the the exit status and stderr.
 func run(cmd *exec.Cmd) error {
-	var out bytes.Buffer
-	cmd.Stdout = &out
-
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
 

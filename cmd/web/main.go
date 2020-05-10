@@ -1,9 +1,14 @@
 package main
 
 import (
+	"flag"
+	"fmt"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"path/filepath"
+
+	"log"
 
 	"github.com/gin-gonic/gin"
 	"github.com/manzanit0/bob/pkg/app"
@@ -12,7 +17,11 @@ import (
 func main() {
 	r := gin.Default()
 
-	r.LoadHTMLGlob("static/*")
+	var phtml = flag.String("html", "static", "path to the template folder")
+
+	flag.Parse()
+
+	r.LoadHTMLGlob(fmt.Sprintf("%s/*", *phtml))
 
 	r.POST("/build", buildHandler)
 
@@ -20,10 +29,20 @@ func main() {
 		c.HTML(http.StatusOK, "index.tmpl", gin.H{})
 	})
 
-	err := r.Run()
+	err := r.Run(getPort())
 	if err != nil {
 		panic(err)
 	}
+}
+
+func getPort() string {
+	// Heroku shenanigans
+	p := os.Getenv("PORT")
+	if p != "" {
+		return ":" + p
+	}
+
+	return ":8080"
 }
 
 type BuildRequest struct {
@@ -36,12 +55,14 @@ func buildHandler(c *gin.Context) {
 	c.BindJSON(&b)
 
 	if b.RepositoryURL == "" {
+		log.Printf("[WARNING] Request made with empty URL")
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid repository url"})
 		return
 	}
 
 	tempDir, err := ioutil.TempDir("", "*")
 	if err != nil {
+		log.Printf("[ERROR] %s", err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -50,6 +71,7 @@ func buildHandler(c *gin.Context) {
 
 	err = a.Clone()
 	if err != nil {
+		log.Printf("[ERROR] %s", err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -58,17 +80,14 @@ func buildHandler(c *gin.Context) {
 
 	outDir, err := ioutil.TempDir("", "*")
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	if err != nil {
+		log.Printf("[ERROR] %s", err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
 	err = a.Build(outDir)
 	if err != nil {
+		log.Printf("[ERROR] %s", err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
