@@ -29,9 +29,13 @@ func New(remoteURL, entry, tempDir string) App {
 
 func (a *App) Clone() error {
 	cmd := exec.Command("git", "clone", a.RemoteURL, a.TempDir)
-	err := cmd.Run()
 
-	return errors.Wrap(err, "unable to clone repository")
+	err := run(cmd)
+	if err != nil {
+		return errors.Wrap(err, "unable to clone repository")
+	}
+
+	return nil
 }
 
 func (a *App) Build(outputDir string) error {
@@ -57,9 +61,13 @@ func (a *App) Build(outputDir string) error {
 
 func (a *App) DeleteClone() error {
 	cmd := exec.Command("rm", "-rf", a.TempDir)
-	err := cmd.Run()
 
-	return errors.Wrap(err, "unable to delete directory")
+	err := run(cmd)
+	if err != nil {
+		return errors.Wrap(err, "unable to delete repository")
+	}
+
+	return nil
 }
 
 func getAllDependencies(path string) error {
