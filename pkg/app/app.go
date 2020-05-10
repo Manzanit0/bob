@@ -3,7 +3,6 @@ package app
 import (
 	"bytes"
 	"fmt"
-	"log"
 	"os"
 	"os/exec"
 	"path"
@@ -36,7 +35,12 @@ func (a *App) Clone() error {
 }
 
 func (a *App) Build(outputDir string) error {
-	err := buildRepository(a.TempDir, a.Entry, a.Name)
+	err := getAllDependencies(a.TempDir)
+	if err != nil {
+		return errors.Wrap(err, "error fetching dependencies for repository")
+	}
+
+	err = buildRepository(a.TempDir, a.Entry, a.Name)
 	if err != nil {
 		return errors.Wrap(err, "error building repository")
 	}
@@ -58,19 +62,24 @@ func (a *App) DeleteClone() error {
 	return errors.Wrap(err, "unable to delete directory")
 }
 
+func getAllDependencies(path string) error {
+	cmd := exec.Command("go", "get", "./...")
+	cmd.Dir = path
+
+	err := run(cmd)
+	if err != nil {
+		return errors.Wrap(err, "unable to fetch dependencies")
+	}
+
+	return nil
+}
+
 func buildRepository(path, entryPoint, outName string) error {
 	cmd := exec.Command("go", "build", "-o", outName, entryPoint)
 	cmd.Dir = path
 
-	var out bytes.Buffer
-	cmd.Stdout = &out
-
-	var stderr bytes.Buffer
-	cmd.Stderr = &stderr
-
-	err := cmd.Run()
+	err := run(cmd)
 	if err != nil {
-		log.Print(fmt.Sprint(err) + ": " + stderr.String())
 		return errors.Wrap(err, "unable to build repository")
 	}
 
@@ -83,4 +92,21 @@ func moveFile(filePath, outPath string) error {
 	fileOutPath := filepath.Join(outPath, fileName)
 
 	return os.Rename(filePath, fileOutPath)
+}
+
+// run simply runs the command and in case of error, composes the error message
+// with the combination of the the exit status and stderr.
+func run(cmd *exec.Cmd) error {
+	var out bytes.Buffer
+	cmd.Stdout = &out
+
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+
+	err := cmd.Run()
+	if err != nil {
+		return errors.New(fmt.Sprint(err) + ": " + stderr.String())
+	}
+
+	return nil
 }
