@@ -12,7 +12,13 @@ import (
 func main() {
 	r := gin.Default()
 
+	r.LoadHTMLGlob("static/*")
+
 	r.POST("/build", buildHandler)
+
+	r.GET("/", func(c *gin.Context) {
+		c.HTML(http.StatusOK, "index.tmpl", gin.H{})
+	})
 
 	err := r.Run()
 	if err != nil {
