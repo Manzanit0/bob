@@ -33,7 +33,7 @@ func (a *App) Clone() error {
 }
 
 func (a *App) Build(outputDir string) error {
-	err := buildRepository(a.TempDir, a.Entry)
+	err := buildRepository(a.TempDir, a.Entry, a.Name)
 	if err != nil {
 		return errors.Wrap(err, "error building repository")
 	}
@@ -55,8 +55,8 @@ func (a *App) DeleteClone() error {
 	return errors.Wrap(err, "unable to delete directory")
 }
 
-func buildRepository(path string, entryPoint string) error {
-	cmd := exec.Command("go", "build", entryPoint)
+func buildRepository(path, entryPoint, outName string) error {
+	cmd := exec.Command("go", "build", "-o", outName, entryPoint)
 	cmd.Dir = path
 
 	err := cmd.Run()
