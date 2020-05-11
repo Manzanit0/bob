@@ -48,6 +48,8 @@ func getPort() string {
 type BuildRequest struct {
 	RepositoryURL   string `json:"url"`
 	RepositoryEntry string `json:"entry_point"`
+	TargetOS        string `json:"target_os"`
+	TargetArch      string `json:"target_arch"`
 }
 
 func buildHandler(c *gin.Context) {
@@ -59,6 +61,8 @@ func buildHandler(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid repository url"})
 		return
 	}
+
+	// TODO validate targetOS and targetArch
 
 	tempDir, err := ioutil.TempDir("", "*")
 	if err != nil {
@@ -85,7 +89,7 @@ func buildHandler(c *gin.Context) {
 		return
 	}
 
-	err = a.Build(outDir)
+	err = a.Build(outDir, b.TargetOS, b.TargetArch)
 	if err != nil {
 		log.Printf("[ERROR] %s", err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})

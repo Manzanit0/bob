@@ -24,6 +24,40 @@
               <input type="text" placeholder="https://github.com/Manzanit0/golarm" id="urlField">
               <label for="entryPointField">Entry point</label>
               <input type="text" placeholder="cmd/main.go" id="entryPointField">
+              <div class="row">
+                  <div class="column column-50">
+                      <label for="targetOSSelect">Target OS</label>
+                      <select id="targetOSSelect">
+                          <option value="darwin">darwin</option>
+                          <option value="dragonfly">dragonfly</option>
+                          <option value="freebsd">freebsd</option>
+                          <option value="linux">linux</option>
+                          <option value="nacl">nacl</option>
+                          <option value="netbsd">netbsd</option>
+                          <option value="openbsd">openbsd</option>
+                          <option value="plan9">plan9</option>
+                          <option value="solaris">solaris</option>
+                          <option value="windows">windows</option>
+                      </select>
+                  </div>
+                  <div class="column column-50">
+                      <label for="targetArchSelect">Target Arch</label>
+                      <select id="targetArchSelect">
+                          <option value="386">386</option>
+                          <option value="amd64">amd64</option>
+                          <option value="amd64p32">amd64p32</option>
+                          <option value="arm">arm</option>
+                          <option value="arm64">arm64</option>
+                          <option value="ppc64">ppc64</option>
+                          <option value="ppc64le">ppc64le</option>
+                          <option value="mips">mips</option>
+                          <option value="mipsle">mipsle</option>
+                          <option value="mips64">mips64</option>
+                          <option value="mips64le">mips64le</option>
+                          <option value="s390x">s390x</option>
+                      </select>
+                  </div>
+              </div>
               <input class="button-primary" type="submit" value="Build">
             </fieldset>
           </form>
@@ -36,6 +70,8 @@
 
         const repositoryUrl = document.getElementById("urlField").value;
         const entryPoint = document.getElementById("entryPointField").value;
+        const targetOS = document.getElementById("targetOSSelect").value;
+        const targetArch = document.getElementById("targetArchSelect").value;
 
         var xhr = new XMLHttpRequest();
         xhr.open("POST", "https://builder-bob.herokuapp.com/build", true); // TODO make this env dependant
@@ -93,7 +129,7 @@
             }
         };
 
-        var data = JSON.stringify({"url": repositoryUrl, "entry_point": entryPoint});
+        var data = JSON.stringify({"url": repositoryUrl, "entry_point": entryPoint, "target_os": targetOS, "target_arch": targetArch});
         xhr.send(data)
         return false;
       }

@@ -38,13 +38,14 @@ func (a *App) Clone() error {
 	return nil
 }
 
-func (a *App) Build(outputDir string) error {
+func (a *App) Build(outputDir, targetOS, targetArch string) error {
+	// TODO validate targetOS and targetArch
 	err := getAllDependencies(a.TempDir)
 	if err != nil {
 		return errors.Wrap(err, "error fetching dependencies for repository")
 	}
 
-	err = buildRepository(a.TempDir, a.Entry, a.Name)
+	err = buildRepository(a.TempDir, a.Entry, a.Name, targetOS, targetArch)
 	if err != nil {
 		return errors.Wrap(err, "error building repository")
 	}
@@ -82,13 +83,12 @@ func getAllDependencies(path string) error {
 	return nil
 }
 
-func buildRepository(path, entryPoint, outName string) error {
+func buildRepository(path, entryPoint, outName, targetOS, targetArch string) error {
 	cmd := exec.Command("go", "build", "-i", "-o", outName, entryPoint)
 	cmd.Dir = path
 
-	// FIXME - for now, so it works for me. Ideally, expose as dropdown/parameter
-	cmd.Env = append(os.Environ(), "GOOS=darwin")
-	cmd.Env = append(cmd.Env, "GOARCH=amd64")
+	cmd.Env = append(os.Environ(), "GOOS="+targetOS)
+	cmd.Env = append(cmd.Env, "GOARCH="+targetArch)
 
 	err := run(cmd)
 	if err != nil {
