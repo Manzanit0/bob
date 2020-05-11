@@ -15,6 +15,8 @@ type config struct {
 	repositoryURL   string
 	repositoryEntry string
 	outputDir       string
+	goOS            string
+	goArch          string
 }
 
 func main() {
@@ -36,7 +38,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	err = a.Build(conf.outputDir)
+	err = a.Build(conf.outputDir, conf.goOS, conf.goArch)
 	if err != nil {
 		// Don't Fatal - we want to clean up the clone.
 		log.Print(err)
@@ -54,6 +56,8 @@ func processArgs() (config, error) {
 	repositoryURL := flag.String("repository", "NaR", "repository to build")
 	entryPoint := flag.String("entry", ".", "entry point for project build")
 	outputDir := flag.String("out", "/Users/manzanit0/Desktop", "output directory")
+	targetOS := flag.String("goos", "darwin", "build target OS")
+	targetArch := flag.String("goarch", "amd64", "build target Arch")
 	flag.Parse()
 
 	if repositoryURL == nil || *repositoryURL == "NaR" {
@@ -68,6 +72,8 @@ func processArgs() (config, error) {
 		repositoryURL:   *repositoryURL,
 		repositoryEntry: *entryPoint,
 		outputDir:       *outputDir, // TODO check it's a valid path
+		goOS:            *targetOS,
+		goArch:          *targetArch,
 	}
 
 	return c, nil
