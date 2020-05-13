@@ -45,7 +45,7 @@ func getPort() string {
 	return ":8080"
 }
 
-type BuildRequest struct {
+type buildRequest struct {
 	RepositoryURL   string `json:"url"`
 	RepositoryEntry string `json:"entry_point"`
 	TargetOS        string `json:"target_os"`
@@ -53,7 +53,7 @@ type BuildRequest struct {
 }
 
 func buildHandler(c *gin.Context) {
-	var b BuildRequest
+	var b buildRequest
 	c.BindJSON(&b)
 
 	if b.RepositoryURL == "" {
