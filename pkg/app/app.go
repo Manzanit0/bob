@@ -7,6 +7,7 @@ import (
 	"os/exec"
 	"path"
 	"path/filepath"
+	"strings"
 
 	"github.com/pkg/errors"
 )
@@ -45,12 +46,16 @@ func (a *App) Build(outputDir, targetOS, targetArch string) error {
 		return errors.Wrap(err, "error fetching dependencies for repository")
 	}
 
-	err = buildRepository(a.TempDir, a.Entry, a.Name, targetOS, targetArch)
+	d, _ := filepath.Split(a.Entry)
+	d = strings.Trim(d, "/")
+	compilationDir := filepath.Join(a.TempDir, d)
+
+	err = buildRepository(compilationDir, a.Name, targetOS, targetArch)
 	if err != nil {
 		return errors.Wrap(err, "error building repository")
 	}
 
-	binaryPath := filepath.Join(a.TempDir, a.Name)
+	binaryPath := filepath.Join(compilationDir, a.Name)
 
 	err = moveFile(binaryPath, outputDir)
 	if err != nil {
@@ -83,8 +88,8 @@ func getAllDependencies(path string) error {
 	return nil
 }
 
-func buildRepository(path, entryPoint, outName, targetOS, targetArch string) error {
-	cmd := exec.Command("go", "build", "-i", "-o", outName, entryPoint)
+func buildRepository(path, outName, targetOS, targetArch string) error {
+	cmd := exec.Command("go", "build", "-i", "-o", outName, ".")
 	cmd.Dir = path
 
 	cmd.Env = append(os.Environ(), "GOOS="+targetOS)
@@ -111,6 +116,9 @@ func moveFile(filePath, outPath string) error {
 func run(cmd *exec.Cmd) error {
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
+
+	fmt.Printf("\ncmd %s", cmd.String())
+	fmt.Printf("\ncmd path %s\n", cmd.Dir)
 
 	err := cmd.Run()
 	if err != nil {
